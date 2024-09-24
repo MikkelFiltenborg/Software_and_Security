@@ -1,9 +1,12 @@
 ﻿@page "/"
 @using Microsoft.AspNetCore.Identity;
+@using Microsoft.AspNetCore.Authorization;
+@attribute [Authorize(Policy = "AuthenticatedUser")]
 
 @inject IServiceProvider _serviceProvider
 @* @inject UserManager<Data.ApplicationUser> UserManager *@
-    @inject AuthenticationStateProvider _authenticationStateProvider;
+@inject AuthenticationStateProvider _authenticationStateProvider;
+@inject Code.HashingHandler _hashingHandler;
 
 <PageTitle>Home</PageTitle>
 
@@ -52,6 +55,12 @@ Welcome to your new app.
         var authUser = authenticationState.User;
         _isAuthenticated = authUser.Identity.IsAuthenticated;
         _isAdmin = authUser.IsInRole("Admin");
+
+        string textToHash1 = "MyTextToHash";
+        string textToHash2 = "MyTextToHash";
+        string hashedValue1 = _hashingHandler.BCryptHashing(textToHash1);
+        bool userIsValidated = _hashingHandler.BCryptVerifyHashing(textToHash1, hashedValue1);
+        // bool userIsValidated = hashedValue1 == hashedValue2;
     }
 
     // public async Task CreateUserRolesAsync(string user, string role)
