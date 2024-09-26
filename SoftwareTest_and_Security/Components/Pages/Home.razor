@@ -1,52 +1,107 @@
 ﻿@page "/"
 @using Microsoft.AspNetCore.Identity;
 @using Microsoft.AspNetCore.Authorization;
+@using SoftwareTest_and_Security.Components.Account.Shared
+@using SoftwareTest_and_Security.Models
 @attribute [Authorize(Policy = "AuthenticatedUser")]
 
 @inject IServiceProvider _serviceProvider
+@inject Repo.CprRepo _cprRepo;
+@inject Repo.ToDoRepo _toDoRepo;
 @* @inject UserManager<Data.ApplicationUser> UserManager *@
 @inject AuthenticationStateProvider _authenticationStateProvider;
 @inject Code.HashingHandler _hashingHandler;
+@inject Code.SymetricEncryptionHandler _symetricEncryptionHandler;
+@inject Code.AsymetricEncryptionHandler _asymetricEncryptionHandler;
 
 <PageTitle>Home</PageTitle>
 
-@* @if (_isAuthenticated)
+@if (!autherized)
 {
-    <p>You are logged in!</p>
-    @if (_isAdmin)
-    {
-        <p>You are admin!</p>
-    }
+    <div class="row d-flex justify-content-center" style="min-height: 100vh">
+        <div class="col-md-6">
+            <section>
+                <h2>Enter your CPR number below</h2>
+                <hr />
+                <div class="form-floating mb-3">
+                    <input type="text" class="form-control" aria-required="true" @bind="_inputCpr" @oninput="OnInput" placeholder="xxxxxx-xxxx" />
+                    <label for="cpr" class="form-label">CPR Nummer</label>
+                </div>
+                    <div class="form-floating mb-3">
+                    <button type="submit" class="w-100 btn btn-lg btn-primary" @onclick="SubmitCpr" disabled="@(_inputCpr?.Length != 10)">Submit</button>
+                </div>
+            </section>
+        </div>
+    </div>
 }
 else
 {
-    <p>You are Not logged in!</p>
-} *@
-
-<h1>Hello, world!</h1>
-
-Welcome to your new app.
-
-<AuthorizeView>
-    <Authorized>
-        <p>You are logged in!</p>
-    </Authorized>
-    <NotAuthorized>
-        <p>You are not logged in!</p>
-    </NotAuthorized>
-</AuthorizeView>
-<AuthorizeView Roles="Admin">
-    <Authorized>
-        <p>You are logged in as Admin!</p>
-    </Authorized>
-</AuthorizeView>
+    <AuthorizeView>
+        <Authorized>
+            <h2>You're logged in!</h2>
+        </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Roles="Admin">
+        <Authorized>
+            <h4>You're also the Admin!</h4>
+        </Authorized>
+    </AuthorizeView>
+    <br />
+    <hr />
+    <div class="row d-flex justify-content-center">
+        <div class="col-md-6">
+            <section>
+                <h2>Enter your To-Do item below</h2>
+                <hr />
+                <div class="form-floating mb-3">
+                    <input type="text" class="form-control" aria-required="true" @bind="_inputTodo" @oninput="OnInput" placeholder="To-do-Item" />
+                    <label for="cpr" class="form-label">to-do</label>
+                </div>
+                <div class="form-floating mb-3">
+                    <button type="submit" class="w-100 btn btn-lg btn-primary" @onclick="SubmitToDo" >Add Item</button>
+                </div>
+            </section>
+        </div>
+    </div>
+    <br />
+    <hr />
+    <div class="row d-flex justify-content-center">
+        <h4>List of Items To-Do</h4>
+        <table>
+            <tr>
+                <th>Item info</th>
+            </tr>
+            @foreach (var item in _user.toDoList)
+            {
+                <tr>
+                    <td>@_asymetricEncryptionHandler.AsymetricDecrypt(item.Title)</td>
+                </tr>
+                <hr />
+            }
+        </table>
+    </div>
+}
 
 @code{
+    private CprNr _user = null;
+
+    private string _username;
+    private string _inputCpr;
+    private string _submitCpr;
+    private List<CprNr> _CprUserList;
+
+    private string _todoname;
+    private string _inputTodo;
+    private string _submitTodo;
+    private List<ToDo> _ToDoItemList;
+
     private bool _isAuthenticated;
     private bool _isAdmin;
 
     public bool IsAuth => _isAuthenticated;
     public bool IsAdmin => _isAdmin;
+    public bool userIsValidated = false;
+    public bool autherized = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -56,11 +111,73 @@ Welcome to your new app.
         _isAuthenticated = authUser.Identity.IsAuthenticated;
         _isAdmin = authUser.IsInRole("Admin");
 
-        string textToHash1 = "MyTextToHash";
-        string textToHash2 = "MyTextToHash";
-        string hashedValue1 = _hashingHandler.BCryptHashing(textToHash1);
-        bool userIsValidated = _hashingHandler.BCryptVerifyHashing(textToHash1, hashedValue1);
-        // bool userIsValidated = hashedValue1 == hashedValue2;
+        _username = authUser.Identity.Name;
+
+        _CprUserList = await _cprRepo.GetAll();
+    }
+
+    private void OnInput(ChangeEventArgs e)
+    {
+        _inputCpr = e.Value.ToString();
+    }
+
+    private async void SubmitCpr()
+    {
+        _submitCpr = _inputCpr;
+
+        ValidateCpr(_submitCpr);
+
+        if (!userIsValidated)
+        {
+            string hashedValue = _hashingHandler.BCryptHashing(_submitCpr);
+
+            CprNr cprNr = new CprNr()
+                {
+                    UserName = _username,
+                    Cprnr = hashedValue,
+                    toDoList = new List<ToDo>()
+                };
+            await _cprRepo.Create(cprNr);
+
+            _user = cprNr;
+        }
+
+        autherized = true;
+        StateHasChanged();
+    }
+
+    private async Task ValidateCpr(string submitCpr)
+    {
+        foreach (var item in _CprUserList)
+        {
+            if (item.UserName.Equals(_username))
+            {
+                var hashedValueFromDb = item.Cprnr;
+                userIsValidated = _hashingHandler.BCryptVerifyHashing(submitCpr, hashedValueFromDb);
+
+                if (userIsValidated)
+                {
+                    _user = item;
+                }
+            }
+        }
+    }
+
+    private async void SubmitToDo()
+    {
+        string encryptionInput = await _asymetricEncryptionHandler.AsymetricEncrypt(_inputTodo);
+
+        ToDo toDo = new ToDo()
+            {
+                Title = encryptionInput
+            };
+
+        await _cprRepo.AddItemToList(_user, toDo);
+
+        _inputTodo = null;
+        _CprUserList = await _cprRepo.GetAll();
+
+        StateHasChanged();
     }
 
     // public async Task CreateUserRolesAsync(string user, string role)

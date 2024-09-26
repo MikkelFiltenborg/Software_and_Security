@@ -14,6 +14,18 @@ namespace SoftwareTest_and_Security.Repo
             context = temp;
         }
 
+        public async Task AddItemToList(CprNr model, ToDo item)
+        {
+            if (model.toDoList == null)
+            {
+                model.toDoList = new List<ToDo>();
+            }
+
+            model.toDoList.Add(item);
+            await context.SaveChangesAsync();
+            return;
+        }
+
         public async Task<CprNr> Create(CprNr model)
         {
             context.CprNr.Add(model);
@@ -23,7 +35,7 @@ namespace SoftwareTest_and_Security.Repo
 
         public async Task<List<CprNr>> GetAll()
         {
-            return await context.CprNr.ToListAsync();
+            return await context.CprNr.Include(param => param.toDoList).ToListAsync();
         }
 
         public async Task<CprNr> GetById(int id)

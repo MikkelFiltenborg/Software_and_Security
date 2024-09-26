@@ -6,6 +6,7 @@ namespace SoftwareTest_and_Security.Code
 {
     public class HashingHandler
     {
+        //Deprication planned by 2030, DO NOT USE!
         public string MD5Hashing(string textToHash)
         {
             byte[] inputByte = Encoding.ASCII.GetBytes(textToHash);

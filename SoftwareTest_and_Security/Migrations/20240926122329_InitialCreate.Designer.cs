@@ -12,8 +12,8 @@ using SoftwareTest_and_Security.Models;
 namespace SoftwareTest_and_Security.Migrations
 {
     [DbContext(typeof(ToDoContext))]
-    [Migration("20240924095903_ToDoMigration")]
-    partial class ToDoMigration
+    [Migration("20240926122329_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -44,7 +44,7 @@ namespace SoftwareTest_and_Security.Migrations
                     b.ToTable("CprNr");
                 });
 
-            modelBuilder.Entity("SoftwareTest_and_Security.Models.ToDoList", b =>
+            modelBuilder.Entity("SoftwareTest_and_Security.Models.ToDo", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -56,11 +56,9 @@ namespace SoftwareTest_and_Security.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Desc")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Title")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
@@ -70,7 +68,7 @@ namespace SoftwareTest_and_Security.Migrations
                     b.ToTable("ToDoList");
                 });
 
-            modelBuilder.Entity("SoftwareTest_and_Security.Models.ToDoList", b =>
+            modelBuilder.Entity("SoftwareTest_and_Security.Models.ToDo", b =>
                 {
                     b.HasOne("SoftwareTest_and_Security.Models.CprNr", null)
                         .WithMany("toDoList")

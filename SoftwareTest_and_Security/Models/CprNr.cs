@@ -8,6 +8,6 @@ namespace SoftwareTest_and_Security.Models
         public int Id { get; set; }
         public string? UserName { get; set; }
         public string? Cprnr { get; set; }
-        public List<ToDoList> toDoList { get; set; }
+        public List<ToDo> toDoList { get; set; }
     }
 }

@@ -6,6 +6,7 @@ using SoftwareTest_and_Security.Components;
 using SoftwareTest_and_Security.Components.Account;
 using SoftwareTest_and_Security.Data;
 using SoftwareTest_and_Security.Models;
+using SoftwareTest_and_Security.Repo;
 using System.Security.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,7 +19,14 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
+
+builder.Services.AddScoped<CprRepo>();
+builder.Services.AddScoped<ToDoRepo>();
+
 builder.Services.AddSingleton<HashingHandler>();
+builder.Services.AddSingleton<SymetricEncryptionHandler>();
+builder.Services.AddSingleton<AsymetricEncryptionHandler>();
+
 
 builder.Services.AddAuthentication(options =>
     {
@@ -75,6 +83,9 @@ builder.Configuration.GetSection("Kestrel:Endpoints:Https:Certificate:Path").Val
 
 string kestrelPassword = builder.Configuration.GetValue<string>("KestrelPassword");
 builder.Configuration.GetSection("Kestrel:Endpoints:Https:Certificate:Password").Value = kestrelPassword;
+
+builder.Services.AddDataProtection();
+builder.Services.AddHttpClient();
 
 var app = builder.Build();
 
